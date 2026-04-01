@@ -13,21 +13,22 @@ export default function ChatRoom({ onLeave }) {
   const { connect, joinRoom } = useSocket();
   const joinedRef = useRef(false);
 
-  // ── Connect + join room once ───────────────────────────────
   useEffect(() => {
-    if (!user || joinedRef.current) return;
-    joinedRef.current = true;
+  if (!user || joinedRef.current) return;
+  joinedRef.current = true;
 
-    connect();
-    // Join after a tick to ensure socket initialised
-    setTimeout(() => {
-      joinRoom({ name: user.name, roomId: user.roomId });
-    }, 80);
+  connect();
 
-    return () => {
-      // Don't disconnect here — handled by leaveRoom
-    };
-  }, [user]); // eslint-disable-line
+  setIsConnected(true); // ✅ mark connected
+
+  setTimeout(() => {
+    joinRoom({ name: user.name, roomId: user.roomId });
+  }, 80);
+
+  return () => {
+    setIsConnected(false); // ✅ mark disconnected on leave
+  };
+}, [user, connect, joinRoom, setIsConnected]);
 
   const handleLeave = useCallback(() => {
     leaveRoom();

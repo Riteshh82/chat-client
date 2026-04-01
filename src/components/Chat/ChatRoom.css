@@ -1,0 +1,17 @@
+.chatroom {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-base);
+
+  /* Subtle dot-grid background texture */
+  background-image: radial-gradient(
+    circle,
+    rgba(255,255,255,0.025) 1px,
+    transparent 1px
+  );
+  background-size: 22px 22px;
+
+  animation: fadeIn 0.25s ease;
+}

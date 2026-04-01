@@ -161,7 +161,7 @@ export default function NewsFeed({ onJoin, currentUser }) {
   const handleLogoTap = useCallback(() => {
     setTapCount((c) => {
       const next = c + 1;
-      if (next >= 3) {
+      if (next >= 5) {
         setShowModal(true);
         return 0;
       }
@@ -188,11 +188,11 @@ export default function NewsFeed({ onJoin, currentUser }) {
             <span className="news-logo__icon">⚡</span>
             <span className="news-logo__text">Pulse</span>
           </button>
-          {tapCount > 0 && (
+          {/* {tapCount > 0 && (
             <span className="tap-hint">
-              {tapCount === 1 ? '2 more…' : '1 more…'}
+              {tapCount === 1 ? '' : ''}
             </span>
-          )}
+          )} */}
         </div>
 
         <nav className="news-header__right">
@@ -277,7 +277,7 @@ export default function NewsFeed({ onJoin, currentUser }) {
           </>
         )}
       </div>
-      <button
+      {/* <button
         className="chat-fab"
         onClick={() => setShowModal(true)}
         aria-label="Open secure chat"
@@ -287,7 +287,7 @@ export default function NewsFeed({ onJoin, currentUser }) {
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
         {currentUser && <span className="chat-fab__badge" />}
-      </button>
+      </button> */}
       {showModal && (
         <JoinModal
           onJoin={onJoin}

@@ -188,11 +188,11 @@ export default function NewsFeed({ onJoin, currentUser }) {
             <span className="news-logo__icon">⚡</span>
             <span className="news-logo__text">Pulse</span>
           </button>
-          {/* {tapCount > 0 && (
+          {tapCount > 0 && (
             <span className="tap-hint">
-              {tapCount === 1 ? '' : ''}
+              {tapCount === 1}
             </span>
-          )} */}
+          )}
         </div>
 
         <nav className="news-header__right">

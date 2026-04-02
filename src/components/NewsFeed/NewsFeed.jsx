@@ -196,7 +196,7 @@ export default function NewsFeed({ onJoin, currentUser }) {
         </div>
 
         <nav className="news-header__right">
-          {currentUser && (
+          {/* {currentUser && (
             <button
               className="chat-resume-btn"
               onClick={() => setShowModal(true)}
@@ -206,7 +206,7 @@ export default function NewsFeed({ onJoin, currentUser }) {
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
               </svg>
             </button>
-          )}
+          )} */}
           <button className="news-icon-btn" aria-label="Search">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />

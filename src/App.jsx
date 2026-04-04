@@ -1,46 +1,42 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ChatProvider, useChat } from './context/ChatContext';
-import NewsFeed from './components/NewsFeed/NewsFeed';
-import ChatRoom from './components/Chat/ChatRoom';
-import { useLocalStorage } from './hooks/useLocalStorage';
+import React from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
+import { ChatProvider, useChat } from "./context/ChatContext";
+import NewsFeed from "./components/NewsFeed/NewsFeed";
+import ChatRoom from "./components/Chat/ChatRoom";
 
 function AppRoutes() {
-  const { user, setUser } = useChat();
-  const [savedUser, setSavedUser] = useLocalStorage('chat_user', null);
+  const { user, setUser, leaveRoom } = useChat();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (savedUser?.name && savedUser?.roomId && !user) {
-      setUser(savedUser);
-    }
-  }, []); // eslint-disable-line
 
   const handleJoin = ({ name, roomId }) => {
     const userData = { name: name.trim(), roomId: roomId.trim() };
     setUser(userData);
-    setSavedUser(userData);
     navigate(`/chat/${encodeURIComponent(roomId.trim())}`);
   };
 
   const handleLeave = () => {
-    setSavedUser(null);
-    navigate('/');
+    leaveRoom();
+    navigate("/");
   };
 
   return (
     <div className="app-shell">
       <Routes>
-        <Route
-          path="/"
-          element={<NewsFeed onJoin={handleJoin} currentUser={user} />}
-        />
+        <Route path="/" element={<NewsFeed onJoin={handleJoin} />} />
         <Route
           path="/chat/:roomId"
           element={
-            user
-              ? <ChatRoom onLeave={handleLeave} />
-              : <Navigate to="/" replace />
+            user ? (
+              <ChatRoom onLeave={handleLeave} />
+            ) : (
+              <Navigate to="/" replace />
+            )
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

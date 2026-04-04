@@ -2,10 +2,9 @@
   display: flex;
   flex-direction: column;
   height: 100dvh;
+  height: -webkit-fill-available;
   overflow: hidden;
   background: var(--bg-base);
-
-  /* Subtle dot-grid background texture */
   background-image: radial-gradient(
     circle,
     rgba(255,255,255,0.025) 1px,
@@ -14,4 +13,21 @@
   background-size: 22px 22px;
 
   animation: fadeIn 0.25s ease;
+  position: relative;
+}
+
+.chatroom > header {
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+
+.chatroom > .message-list-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chatroom > .chat-input-bar {
+  flex-shrink: 0;
 }

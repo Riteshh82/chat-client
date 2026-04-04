@@ -1,83 +1,92 @@
 import React, {
-  useEffect, useRef, useCallback, useState, useMemo
-} from 'react';
-import { useChat } from '../../context/ChatContext';
-import { useSocket } from '../../hooks/useSocket';
-import MessageBubble from './MessageBubble';
-import './MessageList.css';
+  useEffect,
+  useRef,
+  useCallback,
+  useState,
+  useMemo,
+} from "react";
+import { useChat } from "../../context/ChatContext";
+import { useSocket } from "../../hooks/useSocket";
+import MessageBubble from "./MessageBubble";
+import "./MessageList.css";
 
 const AUTO_SCROLL_THRESHOLD = 120;
 
 export default function MessageList() {
-  const { messages, typingUsers, user, socketRef } = useChat();
+  const { messages, typingUsers, user, isMyMessage } = useChat();
   const { markSeen } = useSocket();
 
-  const bottomRef     = useRef(null);
-  const containerRef  = useRef(null);
+  const bottomRef = useRef(null);
+  const containerRef = useRef(null);
   const isAtBottomRef = useRef(true);
+  const lastScrollTop = useRef(0);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   const grouped = useMemo(() => {
     const groups = [];
     let lastDate = null;
-
     messages.forEach((msg) => {
       const date = new Date(msg.timestamp).toDateString();
       if (date !== lastDate) {
-        groups.push({ type: 'date', id: `date-${date}`, label: formatDateLabel(date) });
+        groups.push({
+          type: "date",
+          id: `date-${date}`,
+          label: formatDateLabel(date),
+        });
         lastDate = date;
       }
-      groups.push({ type: 'msg', ...msg });
+      groups.push({ type: "msg", ...msg });
     });
-
     return groups;
   }, [messages]);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+
+    const currentTop = el.scrollTop;
+    const isScrollingUp = currentTop < lastScrollTop.current;
+    lastScrollTop.current = currentTop;
+
+    if (isScrollingUp && document.activeElement) {
+      document.activeElement.blur();
+    }
+
+    const distFromBottom = el.scrollHeight - currentTop - el.clientHeight;
     isAtBottomRef.current = distFromBottom < AUTO_SCROLL_THRESHOLD;
     setShowScrollBtn(!isAtBottomRef.current && messages.length > 0);
   }, [messages.length]);
 
   useEffect(() => {
     if (isAtBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages.length]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
   }, []);
 
   useEffect(() => {
-    const sid = socketRef.current?.id;
-    if (!sid) return;
-
     const unseenIds = messages
-      .filter((m) => m.senderId !== sid && m.status !== 'seen' && !m.system)
+      .filter(
+        (m) => !isMyMessage(m.senderId) && m.status !== "seen" && !m.system
+      )
       .map((m) => m.id);
-
     if (unseenIds.length > 0) {
       markSeen(user?.roomId, unseenIds);
     }
-  }, [messages, user?.roomId, markSeen, socketRef]);
+  }, [messages, user?.roomId, markSeen, isMyMessage]);
 
   const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   const typingArr = Array.from(typingUsers.values());
 
   return (
     <div className="message-list-wrap">
-      <div
-        ref={containerRef}
-        className="message-list"
-        onScroll={handleScroll}
-      >
-        {/* Empty state */}
+      <div ref={containerRef} className="message-list" onScroll={handleScroll}>
         {messages.length === 0 && (
           <div className="message-empty">
             <div className="message-empty__icon">💬</div>
@@ -86,40 +95,43 @@ export default function MessageList() {
           </div>
         )}
 
-        {/* Messages */}
         {grouped.map((item) =>
-          item.type === 'date' ? (
+          item.type === "date" ? (
             <DateSeparator key={item.id} label={item.label} />
           ) : (
             <MessageBubble key={item.id} message={item} />
           )
         )}
 
-        {/* Typing indicator */}
-        {typingArr.length > 0 && (
-          <TypingIndicator names={typingArr} />
-        )}
+        {typingArr.length > 0 && <TypingIndicator names={typingArr} />}
 
-        {/* Scroll anchor */}
         <div ref={bottomRef} style={{ height: 1 }} />
       </div>
 
-      {/* Scroll-to-bottom button */}
       {showScrollBtn && (
-        <button className="scroll-to-bottom" onClick={scrollToBottom} aria-label="Scroll to latest">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <button
+          className="scroll-to-bottom"
+          onClick={scrollToBottom}
+          aria-label="Scroll to latest"
+        >
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M12 5v14M5 12l7 7 7-7" />
           </svg>
-          <span className="scroll-to-bottom__count">
-            {messages.length > 0 ? '↓' : ''}
-          </span>
         </button>
       )}
     </div>
   );
 }
 
-// ── Date separator ─────────────────────────────────────────────
 function DateSeparator({ label }) {
   return (
     <div className="date-separator">
@@ -128,27 +140,32 @@ function DateSeparator({ label }) {
   );
 }
 
-// ── Typing indicator bubble ────────────────────────────────────
 function TypingIndicator({ names }) {
-  const label = names.length === 1 ? names[0] : `${names.length} people`;
   return (
     <div className="typing-row">
       <div className="typing-bubble">
         <span className="typing-bubble__dots">
-          <span /><span /><span />
+          <span />
+          <span />
+          <span />
         </span>
       </div>
-      <span className="typing-row__label">{label}</span>
+      <span className="typing-row__label">
+        {names.length === 1 ? names[0] : `${names.length} people`}
+      </span>
     </div>
   );
 }
 
-// ── Helpers ───────────────────────────────────────────────────
 function formatDateLabel(dateStr) {
-  const d   = new Date(dateStr);
+  const d = new Date(dateStr);
   const now = new Date();
   const diffDays = Math.floor((now - d) / 86400000);
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Yesterday';
-  return d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return d.toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }

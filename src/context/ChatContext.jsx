@@ -1,15 +1,29 @@
-import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+} from "react";
 
 const ChatContext = createContext(null);
 
 export function ChatProvider({ children }) {
-  const [user, setUser] = useState(null); // { name, roomId }
+  const [user, setUser] = useState(null);
 
-
-  const [messages,     setMessages]     = useState([]);
+  const [messages, setMessages] = useState([]);
   const [participants, setParticipants] = useState([]);
-  const [typingUsers,  setTypingUsers]  = useState(new Map()); // socketId → name
-  const [isConnected,  setIsConnected]  = useState(false);
+  const [typingUsers, setTypingUsers] = useState(new Map());
+  const [isConnected, setIsConnected] = useState(false);
+  const mySocketIdsRef = useRef(new Set());
+
+  const addMySocketId = useCallback((id) => {
+    if (id) mySocketIdsRef.current.add(id);
+  }, []);
+
+  const isMyMessage = useCallback((senderId) => {
+    return mySocketIdsRef.current.has(senderId);
+  }, []);
 
   const socketRef = useRef(null);
 
@@ -32,8 +46,12 @@ export function ChatProvider({ children }) {
 
   const bulkUpdateStatus = useCallback((status) => {
     setMessages((prev) =>
-      prev.map((m) => (m.status === 'sent' ? { ...m, status } : m))
+      prev.map((m) => (m.status === "sent" ? { ...m, status } : m))
     );
+  }, []);
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
   }, []);
 
   const addTypingUser = useCallback((socketId, name) => {
@@ -53,29 +71,44 @@ export function ChatProvider({ children }) {
     });
   }, []);
 
-
   const leaveRoom = useCallback(() => {
     if (socketRef.current) {
       socketRef.current.disconnect();
+      socketRef.current = null;
     }
+    mySocketIdsRef.current = new Set();
     setUser(null);
     setMessages([]);
     setParticipants([]);
     setTypingUsers(new Map());
     setIsConnected(false);
-    localStorage.removeItem('chat_user');
   }, []);
 
   return (
-    <ChatContext.Provider value={{
-      user, setUser,
-      messages, addMessage, setHistory, updateMessageStatus, bulkUpdateStatus,
-      participants, setParticipants,
-      typingUsers, addTypingUser, removeTypingUser,
-      isConnected, setIsConnected,
-      socketRef,
-      leaveRoom,
-    }}>
+    <ChatContext.Provider
+      value={{
+        user,
+        setUser,
+        messages,
+        addMessage,
+        setHistory,
+        updateMessageStatus,
+        bulkUpdateStatus,
+        clearMessages,
+        participants,
+        setParticipants,
+        typingUsers,
+        addTypingUser,
+        removeTypingUser,
+        isConnected,
+        setIsConnected,
+        socketRef,
+        mySocketIdsRef,
+        addMySocketId,
+        isMyMessage,
+        leaveRoom,
+      }}
+    >
       {children}
     </ChatContext.Provider>
   );
@@ -83,6 +116,6 @@ export function ChatProvider({ children }) {
 
 export const useChat = () => {
   const ctx = useContext(ChatContext);
-  if (!ctx) throw new Error('useChat must be used inside ChatProvider');
+  if (!ctx) throw new Error("useChat must be used inside ChatProvider");
   return ctx;
 };

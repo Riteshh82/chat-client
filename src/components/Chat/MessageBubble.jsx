@@ -1,11 +1,10 @@
-import React, { memo } from 'react';
-import { useChat } from '../../context/ChatContext';
-import { formatTime, avatarColor, initials } from '../../utils';
-import './MessageBubble.css';
+import React, { memo } from "react";
+import { useChat } from "../../context/ChatContext";
+import { formatTime, avatarColor, initials } from "../../utils";
+import "./MessageBubble.css";
 
 const MessageBubble = memo(function MessageBubble({ message }) {
-  const { socketRef } = useChat();
-  const mySocketId = socketRef.current?.id;
+  const { isMyMessage } = useChat();
 
   if (message.system) {
     return (
@@ -15,10 +14,14 @@ const MessageBubble = memo(function MessageBubble({ message }) {
     );
   }
 
-  const isOwn = message.senderId === mySocketId;
+  const isOwn = isMyMessage(message.senderId);
 
   return (
-    <div className={`bubble-row ${isOwn ? 'bubble-row--own' : 'bubble-row--other'}`}>
+    <div
+      className={`bubble-row ${
+        isOwn ? "bubble-row--own" : "bubble-row--other"
+      }`}
+    >
       {!isOwn && (
         <span
           className="bubble-avatar"
@@ -29,7 +32,7 @@ const MessageBubble = memo(function MessageBubble({ message }) {
         </span>
       )}
 
-      <div className={`bubble-group ${isOwn ? 'bubble-group--own' : ''}`}>
+      <div className={`bubble-group ${isOwn ? "bubble-group--own" : ""}`}>
         {!isOwn && (
           <span
             className="bubble-sender"
@@ -39,10 +42,12 @@ const MessageBubble = memo(function MessageBubble({ message }) {
           </span>
         )}
 
-        <div className={`bubble ${isOwn ? 'bubble--own' : 'bubble--other'}`}>
+        <div className={`bubble ${isOwn ? "bubble--own" : "bubble--other"}`}>
           <p className="bubble__text">{message.content}</p>
           <div className="bubble__footer">
-            <span className="bubble__time">{formatTime(message.timestamp)}</span>
+            <span className="bubble__time">
+              {formatTime(message.timestamp)}
+            </span>
             {isOwn && <StatusIcon status={message.status} />}
           </div>
         </div>
@@ -54,21 +59,24 @@ const MessageBubble = memo(function MessageBubble({ message }) {
 export default MessageBubble;
 
 function StatusIcon({ status }) {
-  if (status === 'seen') {
+  if (status === "seen") {
     return (
-      <span className="status-icon status-icon--seen" title="Seen" aria-label="Seen">
+      <span
+        className="status-icon status-icon--seen"
+        title="Seen"
+        aria-label="Seen"
+      >
         <DoubleTick color="var(--accent)" />
       </span>
     );
   }
-  if (status === 'delivered') {
+  if (status === "delivered") {
     return (
       <span className="status-icon" title="Delivered" aria-label="Delivered">
         <DoubleTick color="rgba(255,255,255,0.55)" />
       </span>
     );
   }
-  // sent (default)
   return (
     <span className="status-icon" title="Sent" aria-label="Sent">
       <SingleTick color="rgba(255,255,255,0.55)" />
@@ -79,7 +87,13 @@ function StatusIcon({ status }) {
 function SingleTick({ color }) {
   return (
     <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-      <path d="M1.5 5L5.5 9L12.5 1" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1.5 5L5.5 9L12.5 1"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -87,8 +101,20 @@ function SingleTick({ color }) {
 function DoubleTick({ color }) {
   return (
     <svg width="18" height="10" viewBox="0 0 18 10" fill="none">
-      <path d="M1 5L5 9L12 1" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 5L9 9L16 1" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M1 5L5 9L12 1"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5 5L9 9L16 1"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

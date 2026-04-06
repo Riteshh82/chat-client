@@ -1,19 +1,21 @@
 .chatroom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  height: -webkit-fill-available;
   overflow: hidden;
   background: var(--bg-base);
   background-image: radial-gradient(
     circle,
-    rgba(255,255,255,0.025) 1px,
+    rgba(255,255,255,0.022) 1px,
     transparent 1px
   );
   background-size: 22px 22px;
-
-  animation: fadeIn 0.25s ease;
-  position: relative;
 }
 
 .chatroom > header {
@@ -25,9 +27,12 @@
 .chatroom > .message-list-wrap {
   flex: 1;
   min-height: 0;
+  position: relative;
   overflow: hidden;
 }
 
 .chatroom > .chat-input-bar {
   flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }

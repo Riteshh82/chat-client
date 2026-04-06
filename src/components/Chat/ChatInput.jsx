@@ -1,21 +1,20 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { useSocket } from '../../hooks/useSocket';
-import { debounce } from '../../utils';
-import './ChatInput.css';
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useSocket } from "../../hooks/useSocket";
+import { debounce } from "../../utils";
+import "./ChatInput.css";
 
 const MAX_LENGTH = 4000;
-// Stop emitting "typing" after this many ms of silence
 const TYPING_STOP_DELAY = 1800;
 
 export default function ChatInput({ roomId }) {
-  const [text, setText]  = useState('');
-  const [rows, setRows]  = useState(1);
-  const textareaRef      = useRef(null);
-  const isTypingRef      = useRef(false);
+  const [text, setText] = useState("");
+  const [rows, setRows] = useState(1);
+  const textareaRef = useRef(null);
+  const isTypingRef = useRef(false);
+
   const { sendMessage, emitTypingStart, emitTypingStop } = useSocket();
 
-  // ── Debounced stop-typing emitter ─────────────────────────
-  // eslint-disable-next-line
   const debouncedStop = useCallback(
     debounce(() => {
       if (isTypingRef.current) {
@@ -23,10 +22,9 @@ export default function ChatInput({ roomId }) {
         emitTypingStop(roomId);
       }
     }, TYPING_STOP_DELAY),
-    [roomId, emitTypingStop]
+    [roomId]
   );
 
-  // ── Auto-grow textarea ─────────────────────────────────────
   const adjustRows = useCallback((value) => {
     const lineCount = (value.match(/\n/g) || []).length + 1;
     setRows(Math.min(lineCount, 5));
@@ -38,24 +36,20 @@ export default function ChatInput({ roomId }) {
     setText(val);
     adjustRows(val);
 
-    // Typing indicator
     if (val.trim()) {
       if (!isTypingRef.current) {
         isTypingRef.current = true;
         emitTypingStart(roomId);
       }
       debouncedStop();
-    } else {
-      // Empty input — stop immediately
-      if (isTypingRef.current) {
-        isTypingRef.current = false;
-        emitTypingStop(roomId);
-      }
+    } else if (isTypingRef.current) {
+      isTypingRef.current = false;
+      emitTypingStop(roomId);
     }
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       submit();
     }
@@ -64,27 +58,21 @@ export default function ChatInput({ roomId }) {
   const submit = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed) return;
-
     sendMessage(roomId, trimmed);
-    setText('');
+    setText("");
     setRows(1);
-
-    // Stop typing indicator
     if (isTypingRef.current) {
       isTypingRef.current = false;
       emitTypingStop(roomId);
     }
-
-    // Re-focus input
     textareaRef.current?.focus();
-  }, [text, roomId, sendMessage, emitTypingStop]);
+  }, [text, roomId]);
 
-  // ── Stop typing on unmount ─────────────────────────────────
   useEffect(() => {
     return () => {
       if (isTypingRef.current) emitTypingStop(roomId);
     };
-  }, [roomId, emitTypingStop]);
+  }, [roomId]);
 
   const canSend = text.trim().length > 0;
   const charPct = text.length / MAX_LENGTH;
@@ -92,22 +80,31 @@ export default function ChatInput({ roomId }) {
 
   return (
     <div className="chat-input-bar">
-      {/* Character counter (appears near limit) */}
       {nearLimit && (
-        <div className="char-counter" style={{ color: charPct > 0.95 ? 'var(--danger)' : 'var(--warning)' }}>
+        <div
+          className="char-counter"
+          style={{ color: charPct > 0.95 ? "var(--danger)" : "var(--warning)" }}
+        >
           {MAX_LENGTH - text.length}
         </div>
       )}
 
       <div className="chat-input-row">
-        {/* Attachment placeholder */}
         <button className="chat-icon-btn" aria-label="Attach" tabIndex={-1}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
           </svg>
         </button>
 
-        {/* Text area */}
         <div className="chat-input-field">
           <textarea
             ref={textareaRef}
@@ -117,29 +114,51 @@ export default function ChatInput({ roomId }) {
             onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="Message…"
-            aria-label="Message input"
+            aria-label="Type a message"
             autoComplete="off"
-            autoCorrect="on"
+            autoCorrect="off"
             autoCapitalize="sentences"
-            spellCheck
+            spellCheck={false}
+            data-form-type="other"
+            x-apple-data-detectors="false"
+            inputMode="text"
+            enterKeyHint="send"
           />
         </div>
 
-        {/* Send / Emoji button */}
         {canSend ? (
           <button
             className="chat-send-btn"
             onClick={submit}
             aria-label="Send message"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <path d="M22 2L11 13M22 2 15 22 11 13 2 9l20-7z" />
             </svg>
           </button>
         ) : (
           <button className="chat-icon-btn" aria-label="Emoji" tabIndex={-1}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" /><path d="M8 13s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" />
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 13s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01" />
             </svg>
           </button>
         )}

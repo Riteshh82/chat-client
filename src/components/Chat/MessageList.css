@@ -1,21 +1,18 @@
 .message-list-wrap {
-  flex: 1;
   position: relative;
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
 }
 
 .message-list {
-  flex: 1;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  position: absolute;
+  inset: 0;
+  overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
-  padding: 14px 0 10px;
+  overscroll-behavior-y: contain;
+  padding: 14px 0 12px;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  scroll-behavior: smooth;
 }
 
 .message-empty {
@@ -29,11 +26,7 @@
   animation: fadeSlideUp 0.5s ease;
 }
 
-.message-empty__icon {
-  font-size: 52px;
-  margin-bottom: 16px;
-  filter: grayscale(0.3);
-}
+.message-empty__icon  { font-size: 52px; margin-bottom: 16px; }
 
 .message-empty__title {
   font-family: var(--font-display);
@@ -52,7 +45,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 10px 14px;
+  padding: 8px 14px;
 }
 
 .date-separator__label {
@@ -100,7 +93,6 @@
   background: var(--text-muted);
   animation: typingPulse 1.2s ease-in-out infinite;
 }
-
 .typing-bubble__dots span:nth-child(1) { animation-delay: 0ms; }
 .typing-bubble__dots span:nth-child(2) { animation-delay: 160ms; }
 .typing-bubble__dots span:nth-child(3) { animation-delay: 320ms; }
@@ -118,24 +110,18 @@
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);
   color: var(--text-primary);
-  padding: 6px 14px;
-  border-radius: 99px;
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 50%;
   box-shadow: var(--shadow-md);
   animation: fadeSlideUp 0.2s ease;
   z-index: 10;
   transition: background var(--transition-fast), transform var(--transition-fast);
 }
 
-.scroll-to-bottom:hover {
-  background: var(--bg-input);
-}
-
-.scroll-to-bottom:active {
-  transform: translateX(-50%) scale(0.95);
-}
+.scroll-to-bottom:hover  { background: var(--bg-input); }
+.scroll-to-bottom:active { transform: translateX(-50%) scale(0.9); }

@@ -1,11 +1,8 @@
 import React, { memo } from "react";
-import { useChat } from "../../context/ChatContext";
 import { formatTime, avatarColor, initials } from "../../utils";
 import "./MessageBubble.css";
 
 const MessageBubble = memo(function MessageBubble({ message }) {
-  const { isMyMessage } = useChat();
-
   if (message.system) {
     return (
       <div className="system-msg">
@@ -14,7 +11,7 @@ const MessageBubble = memo(function MessageBubble({ message }) {
     );
   }
 
-  const isOwn = isMyMessage(message.senderId);
+  const isOwn = message.isOwn === true;
 
   return (
     <div
@@ -61,25 +58,21 @@ export default MessageBubble;
 function StatusIcon({ status }) {
   if (status === "seen") {
     return (
-      <span
-        className="status-icon status-icon--seen"
-        title="Seen"
-        aria-label="Seen"
-      >
-        <DoubleTick color="var(--accent)" />
+      <span className="status-icon status-icon--seen" title="Seen">
+        <DoubleTick color="rgba(255,255,255,0.95)" />
       </span>
     );
   }
   if (status === "delivered") {
     return (
-      <span className="status-icon" title="Delivered" aria-label="Delivered">
-        <DoubleTick color="rgba(255,255,255,0.55)" />
+      <span className="status-icon" title="Delivered">
+        <DoubleTick color="rgba(255,255,255,0.5)" />
       </span>
     );
   }
   return (
-    <span className="status-icon" title="Sent" aria-label="Sent">
-      <SingleTick color="rgba(255,255,255,0.55)" />
+    <span className="status-icon" title="Sent">
+      <SingleTick color="rgba(255,255,255,0.5)" />
     </span>
   );
 }

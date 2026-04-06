@@ -8,7 +8,7 @@ const BACKEND_URL =
 
 export function useSocket() {
   const {
-    user,
+    // userRef,
     addMessage,
     setHistory,
     updateMessageStatus,
@@ -18,6 +18,7 @@ export function useSocket() {
     removeTypingUser,
     setIsConnected,
     socketRef,
+    mySocketIdsRef,
     addMySocketId,
   } = useChat();
 
@@ -33,7 +34,7 @@ export function useSocket() {
       transports: ["websocket", "polling"],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 15,
       withCredentials: true,
     });
 
@@ -42,21 +43,18 @@ export function useSocket() {
     socket.on("connect", () => {
       setIsConnected(true);
       addMySocketId(socket.id);
-      console.log("✅ Socket connected:", socket.id);
-    });
-
-    socket.on("disconnect", (reason) => {
-      setIsConnected(false);
-      console.log("❌ Socket disconnected:", reason);
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("Socket error:", err.message);
-      setIsConnected(false);
     });
 
     socket.on("reconnect", () => {
       addMySocketId(socket.id);
+    });
+
+    socket.on("disconnect", () => {
+      setIsConnected(false);
+    });
+
+    socket.on("connect_error", () => {
+      setIsConnected(false);
     });
 
     socket.on("message_history", (history) => {
@@ -64,11 +62,10 @@ export function useSocket() {
     });
 
     socket.on("new_message", (msg) => {
-      addMessage(msg);
-      if (
-        !socket._myIds?.has(msg.senderId) &&
-        document.visibilityState === "visible"
-      ) {
+      const isOwn = mySocketIdsRef.current.has(msg.senderId);
+      addMessage({ ...msg, isOwn });
+
+      if (!isOwn && document.visibilityState === "visible") {
         socket.emit("messages_seen", {
           roomId: msg.roomId,
           messageIds: [msg.id],
@@ -77,7 +74,7 @@ export function useSocket() {
     });
 
     socket.on("system_message", (msg) => {
-      addMessage({ ...msg, system: true });
+      addMessage({ ...msg, system: true, isOwn: false });
     });
 
     socket.on("message_status_update", ({ id, status }) => {
@@ -103,7 +100,7 @@ export function useSocket() {
     socket.on("user_stop_typing", ({ socketId }) => {
       removeTypingUser(socketId);
     });
-  }, []); // eslint-disable-line
+  }, []);
 
   const joinRoom = useCallback(
     ({ name, roomId }) => {
@@ -122,38 +119,51 @@ export function useSocket() {
       tryJoin();
     },
     [connect]
-  ); // eslint-disable-line
+  );
 
-  const sendMessage = useCallback((roomId, content) => {
-    socketRef.current?.emit("send_message", { roomId, content });
-  }, []); // eslint-disable-line
+  const sendMessage = useCallback(
+    (roomId, content) => {
+      socketRef.current?.emit("send_message", { roomId, content });
+    },
+    [socketRef]
+  );
 
-  const emitTypingStart = useCallback((roomId) => {
-    socketRef.current?.emit("typing_start", { roomId });
-  }, []); // eslint-disable-line
+  const emitTypingStart = useCallback(
+    (roomId) => {
+      socketRef.current?.emit("typing_start", { roomId });
+    },
+    [socketRef]
+  );
 
-  const emitTypingStop = useCallback((roomId) => {
-    socketRef.current?.emit("typing_stop", { roomId });
-  }, []); // eslint-disable-line
+  const emitTypingStop = useCallback(
+    (roomId) => {
+      socketRef.current?.emit("typing_stop", { roomId });
+    },
+    [socketRef]
+  );
 
-  const markSeen = useCallback((roomId, messageIds) => {
-    if (!messageIds?.length) return;
-    socketRef.current?.emit("messages_seen", { roomId, messageIds });
-  }, []); // eslint-disable-line
+  const markSeen = useCallback(
+    (roomId, messageIds) => {
+      if (!messageIds?.length) return;
+      socketRef.current?.emit("messages_seen", { roomId, messageIds });
+    },
+    [socketRef]
+  );
 
   useEffect(() => {
-    if (!user) return;
     const handleVisibility = () => {
-      if (document.visibilityState === "visible") {
-        if (socketRef.current && !socketRef.current.connected) {
-          socketRef.current.connect();
-        }
+      if (
+        document.visibilityState === "visible" &&
+        socketRef.current &&
+        !socketRef.current.connected
+      ) {
+        socketRef.current.connect();
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibility);
-  }, [user]); // eslint-disable-line
+  }, []);
 
   return {
     connect,

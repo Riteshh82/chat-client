@@ -10,22 +10,31 @@ const ChatContext = createContext(null);
 
 export function ChatProvider({ children }) {
   const [user, setUser] = useState(null);
-
   const [messages, setMessages] = useState([]);
   const [participants, setParticipants] = useState([]);
   const [typingUsers, setTypingUsers] = useState(new Map());
   const [isConnected, setIsConnected] = useState(false);
+
   const mySocketIdsRef = useRef(new Set());
+  const socketRef = useRef(null);
+  const userRef = useRef(null);
 
   const addMySocketId = useCallback((id) => {
     if (id) mySocketIdsRef.current.add(id);
   }, []);
 
-  const isMyMessage = useCallback((senderId) => {
-    return mySocketIdsRef.current.has(senderId);
+  const setUserWithRef = useCallback((u) => {
+    userRef.current = u;
+    setUser(u);
   }, []);
 
-  const socketRef = useRef(null);
+  const isMyMessage = useCallback((msg) => {
+    if (!msg) return false;
+    if (msg.isOwn === true) return true;
+    if (msg.isOwn === false) return false;
+    if (msg.senderId && mySocketIdsRef.current.has(msg.senderId)) return true;
+    return false;
+  }, []);
 
   const addMessage = useCallback((msg) => {
     setMessages((prev) => {
@@ -35,7 +44,14 @@ export function ChatProvider({ children }) {
   }, []);
 
   const setHistory = useCallback((history) => {
-    setMessages(history);
+    const myName = userRef.current?.name;
+    const tagged = history.map((msg) => ({
+      ...msg,
+      isOwn:
+        mySocketIdsRef.current.has(msg.senderId) ||
+        (myName && msg.senderName === myName),
+    }));
+    setMessages(tagged);
   }, []);
 
   const updateMessageStatus = useCallback((id, status) => {
@@ -77,6 +93,7 @@ export function ChatProvider({ children }) {
       socketRef.current = null;
     }
     mySocketIdsRef.current = new Set();
+    userRef.current = null;
     setUser(null);
     setMessages([]);
     setParticipants([]);
@@ -88,7 +105,8 @@ export function ChatProvider({ children }) {
     <ChatContext.Provider
       value={{
         user,
-        setUser,
+        setUser: setUserWithRef,
+        userRef,
         messages,
         addMessage,
         setHistory,

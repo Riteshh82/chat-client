@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, {
   useEffect,
   useRef,
@@ -16,44 +17,43 @@ export default function MessageList() {
   const { messages, typingUsers, user, isMyMessage } = useChat();
   const { markSeen } = useSocket();
 
-  const bottomRef = useRef(null);
   const containerRef = useRef(null);
+  const bottomRef = useRef(null);
   const isAtBottomRef = useRef(true);
-  const lastScrollTop = useRef(0);
+  const lastScrollY = useRef(0);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
 
   const grouped = useMemo(() => {
-    const groups = [];
+    const out = [];
     let lastDate = null;
     messages.forEach((msg) => {
       const date = new Date(msg.timestamp).toDateString();
       if (date !== lastDate) {
-        groups.push({
+        out.push({
           type: "date",
           id: `date-${date}`,
           label: formatDateLabel(date),
         });
         lastDate = date;
       }
-      groups.push({ type: "msg", ...msg });
+      out.push({ type: "msg", ...msg });
     });
-    return groups;
+    return out;
   }, [messages]);
 
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    const currentTop = el.scrollTop;
-    const isScrollingUp = currentTop < lastScrollTop.current;
-    lastScrollTop.current = currentTop;
+    const y = el.scrollTop;
 
-    if (isScrollingUp && document.activeElement) {
+    if (y < lastScrollY.current - 8 && document.activeElement) {
       document.activeElement.blur();
     }
+    lastScrollY.current = y;
 
-    const distFromBottom = el.scrollHeight - currentTop - el.clientHeight;
-    isAtBottomRef.current = distFromBottom < AUTO_SCROLL_THRESHOLD;
+    const dist = el.scrollHeight - y - el.clientHeight;
+    isAtBottomRef.current = dist < AUTO_SCROLL_THRESHOLD;
     setShowScrollBtn(!isAtBottomRef.current && messages.length > 0);
   }, [messages.length]);
 
@@ -69,14 +69,10 @@ export default function MessageList() {
 
   useEffect(() => {
     const unseenIds = messages
-      .filter(
-        (m) => !isMyMessage(m.senderId) && m.status !== "seen" && !m.system
-      )
+      .filter((m) => !isMyMessage(m) && m.status !== "seen" && !m.system)
       .map((m) => m.id);
-    if (unseenIds.length > 0) {
-      markSeen(user?.roomId, unseenIds);
-    }
-  }, [messages, user?.roomId, markSeen, isMyMessage]);
+    if (unseenIds.length) markSeen(user?.roomId, unseenIds);
+  }, [messages, user?.roomId]);
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -105,14 +101,14 @@ export default function MessageList() {
 
         {typingArr.length > 0 && <TypingIndicator names={typingArr} />}
 
-        <div ref={bottomRef} style={{ height: 1 }} />
+        <div ref={bottomRef} style={{ height: 1 }} aria-hidden="true" />
       </div>
 
       {showScrollBtn && (
         <button
           className="scroll-to-bottom"
           onClick={scrollToBottom}
-          aria-label="Scroll to latest"
+          aria-label="Scroll to latest message"
         >
           <svg
             width="16"
@@ -141,6 +137,7 @@ function DateSeparator({ label }) {
 }
 
 function TypingIndicator({ names }) {
+  const label = names.length === 1 ? names[0] : `${names.length} people`;
   return (
     <div className="typing-row">
       <div className="typing-bubble">
@@ -150,9 +147,7 @@ function TypingIndicator({ names }) {
           <span />
         </span>
       </div>
-      <span className="typing-row__label">
-        {names.length === 1 ? names[0] : `${names.length} people`}
-      </span>
+      <span className="typing-row__label">{label}</span>
     </div>
   );
 }

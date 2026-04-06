@@ -1,44 +1,33 @@
 :root {
-  /* Palette */
   --bg-base:        #0d1117;
   --bg-surface:     #161b22;
   --bg-elevated:    #1c2128;
   --bg-input:       #21262d;
-
   --accent:         #2dba6e;
   --accent-dim:     #238a52;
   --accent-glow:    rgba(45, 186, 110, 0.18);
-
   --bubble-out:     #2dba6e;
   --bubble-in:      #1c2128;
-
   --text-primary:   #e6edf3;
   --text-secondary: #8b949e;
   --text-muted:     #484f58;
-
   --border:         rgba(255,255,255,0.07);
   --border-strong:  rgba(255,255,255,0.12);
-
   --danger:         #f85149;
   --warning:        #e3b341;
   --info:           #388bfd;
-
   --radius-sm:      8px;
   --radius-md:      14px;
   --radius-lg:      20px;
   --radius-xl:      28px;
-
   --shadow-sm:   0 2px 8px rgba(0,0,0,0.3);
   --shadow-md:   0 4px 20px rgba(0,0,0,0.4);
   --shadow-lg:   0 8px 40px rgba(0,0,0,0.5);
-
   --font-display: 'Syne', sans-serif;
   --font-body:    'DM Sans', sans-serif;
-
   --transition-fast:   150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow:   400ms ease;
-
   --safe-top:    env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
@@ -52,26 +41,34 @@
 
 html {
   height: 100%;
-  scroll-behavior: smooth;
+  height: -webkit-fill-available;
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   height: 100%;
+  height: -webkit-fill-available;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  overflow: hidden;
   background-color: var(--bg-base);
   color: var(--text-primary);
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.5;
-  overflow-x: hidden;
   overscroll-behavior: none;
 }
 
 #root {
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 ::-webkit-scrollbar             { width: 4px; }
@@ -95,41 +92,29 @@ body {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
 @keyframes scaleIn {
   from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
 }
-
-@keyframes slideInRight {
-  from { opacity: 0; transform: translateX(100%); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-
-@keyframes slideOutRight {
-  from { opacity: 1; transform: translateX(0); }
-  to   { opacity: 0; transform: translateX(100%); }
-}
-
 @keyframes popIn {
   0%   { opacity: 0; transform: scale(0.7) translateY(8px); }
   70%  { transform: scale(1.05) translateY(-2px); }
   100% { opacity: 1; transform: scale(1) translateY(0); }
 }
-
 @keyframes typingPulse {
   0%, 80%, 100% { transform: scale(1);   opacity: 0.5; }
   40%           { transform: scale(1.3); opacity: 1; }
 }
-
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .skeleton {
@@ -173,7 +158,7 @@ textarea::placeholder {
 .app-shell {
   width: 100%;
   max-width: 430px;
-  min-height: 100dvh;
+  height: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -188,11 +173,9 @@ textarea::placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 100dvh;
   }
   .app-shell {
-    min-height: 100dvh;
-    max-height: 100dvh;
+    height: 100%;
     border-radius: 0;
     box-shadow: 0 0 0 1px var(--border), var(--shadow-lg);
   }

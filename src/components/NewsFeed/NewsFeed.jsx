@@ -130,7 +130,7 @@ export default function NewsFeed({ onJoin }) {
         await new Promise((r) => setTimeout(r, 600));
         setArticles(FALLBACK_ARTICLES);
       } else {
-        const url = `https://gnews.io/api/v4/top-headlines?category=${NEWS_CATEGORY}&lang=en&max=10&apikey=${NEWS_API_KEY}`;
+        const url = `https://gnews.io/api/v4/search?q=example&lang=en&country=in&max=10&apikey=${NEWS_API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
         if (data.articles?.length) {

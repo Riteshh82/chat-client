@@ -12,12 +12,10 @@ export default function ChatRoom({ onLeave }) {
   const { roomId } = useParams();
   const { user, leaveRoom } = useChat();
   const { connect, joinRoom } = useSocket();
-  const joinedRef = useRef(false);
   const chatroomRef = useRef(null);
 
   useEffect(() => {
-    if (!user || joinedRef.current) return;
-    joinedRef.current = true;
+    if (!user) return;
     connect();
     setTimeout(() => {
       joinRoom({ name: user.name, roomId: user.roomId });

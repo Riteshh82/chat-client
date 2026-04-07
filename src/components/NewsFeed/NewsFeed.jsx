@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import JoinModal from "../Modal/JoinModal";
 import "./NewsFeed.css";
 
-const NEWS_API_KEY = process.env.REACT_APP_NEWS_API_KEY || "";
 const NEWS_CATEGORY = process.env.REACT_APP_NEWS_CATEGORY || "technology";
+const REACT_APP_BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:5001";
 
 const FALLBACK_ARTICLES = [
   {
@@ -126,34 +126,29 @@ export default function NewsFeed({ onJoin }) {
   const fetchNews = useCallback(async () => {
     setLoading(true);
     try {
-      if (!NEWS_API_KEY || NEWS_API_KEY === "your_gnews_api_key_here") {
-        await new Promise((r) => setTimeout(r, 600));
-        setArticles(FALLBACK_ARTICLES);
+      const url = `${REACT_APP_BACKEND_URL}/api/news`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (data.articles?.length) {
+        setArticles(
+          data.articles.map((a, i) => ({
+            id: i,
+            title: a.title,
+            description: a.description,
+            source: a.source,
+            publishedAt: a.publishedAt,
+            urlToImage: a.image,
+            url: a.url,
+            readTime: Math.max(2, Math.ceil((a.content?.length || 500) / 1000)),
+          }))
+        );
       } else {
-        const url = `https://gnews.io/api/v4/search?q=example&lang=en&country=in&max=10&apikey=${NEWS_API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        if (data.articles?.length) {
-          setArticles(
-            data.articles.map((a, i) => ({
-              id: i,
-              title: a.title,
-              description: a.description,
-              source: a.source,
-              publishedAt: a.publishedAt,
-              urlToImage: a.image,
-              url: a.url,
-              readTime: Math.max(
-                2,
-                Math.ceil((a.content?.length || 500) / 1000)
-              ),
-            }))
-          );
-        } else {
-          setArticles(FALLBACK_ARTICLES);
-        }
+        setArticles(FALLBACK_ARTICLES);
       }
-    } catch {
+    } catch (err) {
+      console.error("Frontend fetch error:", err); 
       setArticles(FALLBACK_ARTICLES);
     } finally {
       setLoading(false);

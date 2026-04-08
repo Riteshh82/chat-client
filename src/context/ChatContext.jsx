@@ -16,11 +16,16 @@ export function ChatProvider({ children }) {
   const [isConnected, setIsConnected] = useState(false);
 
   const mySocketIdsRef = useRef(new Set());
+  const myMessageIdsRef = useRef(new Set());
   const socketRef = useRef(null);
   const userRef = useRef(null);
 
   const addMySocketId = useCallback((id) => {
     if (id) mySocketIdsRef.current.add(id);
+  }, []);
+
+  const addMyMessageId = useCallback((id) => {
+    if (id) myMessageIdsRef.current.add(id);
   }, []);
 
   const setUserWithRef = useCallback((u) => {
@@ -32,6 +37,7 @@ export function ChatProvider({ children }) {
     if (!msg) return false;
     if (msg.isOwn === true) return true;
     if (msg.isOwn === false) return false;
+    if (msg.id && myMessageIdsRef.current.has(msg.id)) return true;
     if (msg.senderId && mySocketIdsRef.current.has(msg.senderId)) return true;
     return false;
   }, []);
@@ -45,12 +51,16 @@ export function ChatProvider({ children }) {
 
   const setHistory = useCallback((history) => {
     const myName = userRef.current?.name;
-    const tagged = history.map((msg) => ({
-      ...msg,
-      isOwn:
+    const tagged = history.map((msg) => {
+      const isOwn =
+        myMessageIdsRef.current.has(msg.id) ||
         mySocketIdsRef.current.has(msg.senderId) ||
-        (myName && msg.senderName === myName),
-    }));
+        Boolean(myName && msg.senderName === myName);
+
+      if (isOwn) myMessageIdsRef.current.add(msg.id);
+
+      return { ...msg, isOwn };
+    });
     setMessages(tagged);
   }, []);
 
@@ -122,7 +132,9 @@ export function ChatProvider({ children }) {
         setIsConnected,
         socketRef,
         mySocketIdsRef,
+        myMessageIdsRef,
         addMySocketId,
+        addMyMessageId,
         isMyMessage,
         leaveRoom,
       }}

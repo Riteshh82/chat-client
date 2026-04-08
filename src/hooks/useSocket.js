@@ -19,7 +19,9 @@ export function useSocket() {
     setIsConnected,
     socketRef,
     mySocketIdsRef,
+    myMessageIdsRef,
     addMySocketId,
+    addMyMessageId,
   } = useChat();
 
   const connect = useCallback(() => {
@@ -63,7 +65,12 @@ export function useSocket() {
     });
 
     socket.on("new_message", (msg) => {
-      const isOwn = mySocketIdsRef.current.has(msg.senderId);
+      const isOwn =
+        mySocketIdsRef.current.has(msg.senderId) ||
+        myMessageIdsRef.current.has(msg.id);
+
+      if (isOwn) addMyMessageId(msg.id);
+
       addMessage({ ...msg, isOwn });
 
       if (!isOwn && document.visibilityState === "visible") {

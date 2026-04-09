@@ -7,7 +7,7 @@ import "./ChatInput.css";
 const MAX_LENGTH = 4000;
 const TYPING_STOP_DELAY = 1800;
 
-export default function ChatInput({ roomId }) {
+export default function ChatInput({ roomId, replyTo, onCancelReply }) {
   const [text, setText] = useState("");
   const [rows, setRows] = useState(1);
   const textareaRef = useRef(null);
@@ -25,6 +25,10 @@ export default function ChatInput({ roomId }) {
     [roomId]
   );
 
+  useEffect(() => {
+    if (replyTo) textareaRef.current?.focus();
+  }, [replyTo]);
+
   const adjustRows = useCallback((value) => {
     const lineCount = (value.match(/\n/g) || []).length + 1;
     setRows(Math.min(lineCount, 5));
@@ -35,7 +39,6 @@ export default function ChatInput({ roomId }) {
     if (val.length > MAX_LENGTH) return;
     setText(val);
     adjustRows(val);
-
     if (val.trim()) {
       if (!isTypingRef.current) {
         isTypingRef.current = true;
@@ -53,20 +56,24 @@ export default function ChatInput({ roomId }) {
       e.preventDefault();
       submit();
     }
+    if (e.key === "Escape" && replyTo) {
+      onCancelReply();
+    }
   };
 
   const submit = useCallback(() => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    sendMessage(roomId, trimmed);
+    sendMessage(roomId, trimmed, replyTo || null);
     setText("");
     setRows(1);
+    if (replyTo) onCancelReply();
     if (isTypingRef.current) {
       isTypingRef.current = false;
       emitTypingStop(roomId);
     }
     textareaRef.current?.focus();
-  }, [text, roomId]);
+  }, [text, roomId, replyTo]);
 
   useEffect(() => {
     return () => {
@@ -80,6 +87,37 @@ export default function ChatInput({ roomId }) {
 
   return (
     <div className="chat-input-bar">
+      {replyTo && (
+        <div className="reply-bar">
+          <div className="reply-bar__content">
+            <span className="reply-bar__name">{replyTo.senderName}</span>
+            <span className="reply-bar__text">
+              {replyTo.content.length > 60
+                ? replyTo.content.slice(0, 60) + "…"
+                : replyTo.content}
+            </span>
+          </div>
+          <button
+            className="reply-bar__close"
+            onClick={onCancelReply}
+            aria-label="Cancel reply"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       {nearLimit && (
         <div
           className="char-counter"
@@ -113,14 +151,13 @@ export default function ChatInput({ roomId }) {
             value={text}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
-            placeholder="Message…"
+            placeholder={replyTo ? "Type a reply…" : "Message…"}
             aria-label="Type a message"
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
             data-form-type="other"
-            x-apple-data-detectors="false"
             inputMode="text"
             enterKeyHint="send"
           />

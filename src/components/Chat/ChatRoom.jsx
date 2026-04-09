@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useChat } from "../../context/ChatContext";
 import { useSocket } from "../../hooks/useSocket";
@@ -13,6 +13,7 @@ export default function ChatRoom({ onLeave }) {
   const { user, leaveRoom } = useChat();
   const { connect, joinRoom } = useSocket();
   const chatroomRef = useRef(null);
+  const [replyTo, setReplyTo] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -73,8 +74,12 @@ export default function ChatRoom({ onLeave }) {
   return (
     <div className="chatroom" ref={chatroomRef}>
       <ChatHeader roomId={roomId} onLeave={handleLeave} />
-      <MessageList />
-      <ChatInput roomId={roomId} />
+      <MessageList onReply={setReplyTo} />
+      <ChatInput
+        roomId={roomId}
+        replyTo={replyTo}
+        onCancelReply={() => setReplyTo(null)}
+      />
     </div>
   );
 }

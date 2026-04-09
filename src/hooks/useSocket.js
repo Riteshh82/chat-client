@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { io } from "socket.io-client";
 import { useChat } from "../context/ChatContext";
 
@@ -22,7 +22,11 @@ export function useSocket() {
     myMessageIdsRef,
     addMySocketId,
     addMyMessageId,
+    clearMessages,
+    leaveRoom,
   } = useChat();
+
+  const hasJoinedRef = useRef(false);
 
   const connect = useCallback(() => {
     if (socketRef.current?.connected) return;
@@ -46,9 +50,11 @@ export function useSocket() {
       setIsConnected(true);
       addMySocketId(socket.id);
 
-      const u = userRef.current;
-      if (u?.name && u?.roomId) {
-        socket.emit("join_room", { name: u.name, roomId: u.roomId });
+      if (hasJoinedRef.current) {
+        const u = userRef.current;
+        if (u?.name && u?.roomId) {
+          socket.emit("join_room", { name: u.name, roomId: u.roomId });
+        }
       }
     });
 
@@ -58,6 +64,11 @@ export function useSocket() {
 
     socket.on("connect_error", () => {
       setIsConnected(false);
+    });
+
+    socket.on("room_full", () => {
+      leaveRoom();
+      window.location.href = "/";
     });
 
     socket.on("message_history", (history) => {
@@ -101,6 +112,10 @@ export function useSocket() {
       setParticipants(participants);
     });
 
+    socket.on("chat_cleared", () => {
+      clearMessages();
+    });
+
     socket.on("user_typing", ({ socketId, name }) => {
       addTypingUser(socketId, name);
     });
@@ -116,9 +131,11 @@ export function useSocket() {
 
       const tryJoin = () => {
         if (socketRef.current?.connected) {
+          hasJoinedRef.current = true;
           socketRef.current.emit("join_room", { name, roomId });
         } else {
           socketRef.current?.once("connect", () => {
+            hasJoinedRef.current = true;
             socketRef.current.emit("join_room", { name, roomId });
           });
         }
@@ -130,8 +147,12 @@ export function useSocket() {
   );
 
   const sendMessage = useCallback(
-    (roomId, content) => {
-      socketRef.current?.emit("send_message", { roomId, content });
+    (roomId, content, replyTo) => {
+      socketRef.current?.emit("send_message", {
+        roomId,
+        content,
+        replyTo: replyTo || null,
+      });
     },
     [socketRef]
   );
@@ -158,6 +179,13 @@ export function useSocket() {
     [socketRef]
   );
 
+  const emitClearChat = useCallback(
+    (roomId) => {
+      socketRef.current?.emit("clear_chat", { roomId });
+    },
+    [socketRef]
+  );
+
   useEffect(() => {
     const handleVisibility = () => {
       if (
@@ -180,5 +208,6 @@ export function useSocket() {
     emitTypingStart,
     emitTypingStop,
     markSeen,
+    emitClearChat,
   };
 }

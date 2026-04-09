@@ -1,12 +1,15 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { useChat } from "../../context/ChatContext";
+import { useSocket } from "../../hooks/useSocket";
 import { avatarColor, initials } from "../../utils";
 import "./ChatHeader.css";
 
 export default function ChatHeader({ roomId, onLeave }) {
-  const { participants, isConnected, typingUsers, clearMessages } = useChat();
+  const { participants, isConnected, typingUsers } = useChat();
+  const { emitClearChat } = useSocket();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+
   useEffect(() => {
     if (!menuOpen) return;
     const handler = (e) => {
@@ -29,7 +32,7 @@ export default function ChatHeader({ roomId, onLeave }) {
   const online = participants.length;
 
   const handleClearChat = () => {
-    clearMessages();
+    emitClearChat(roomId);
     setMenuOpen(false);
   };
 

@@ -1,16 +1,99 @@
-import React, { memo, useRef, useState } from "react";
+import React, { memo, useRef, useState, useEffect } from "react";
 import { formatTime, avatarColor, initials } from "../../utils";
 import "./MessageBubble.css";
 
-const SWIPE_THRESHOLD = 60;
+const SWIPE_THRESHOLD = 65;
 
 const MessageBubble = memo(function MessageBubble({ message, onReply }) {
   const [swipeX, setSwipeX] = useState(0);
   const [swiping, setSwiping] = useState(false);
+  const rowRef = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const swipeLocked = useRef(false);
+  const dirLocked = useRef(null);
   const didTrigger = useRef(false);
+  const onReplyRef = useRef(onReply);
+
+  useEffect(() => {
+    onReplyRef.current = onReply;
+  }, [onReply]);
+
+  useEffect(() => {
+    const el = rowRef.current;
+    if (!el) return;
+
+    const onStart = (e) => {
+      const t = e.touches[0];
+      touchStartX.current = t.clientX;
+      touchStartY.current = t.clientY;
+      dirLocked.current = null;
+      didTrigger.current = false;
+      setSwiping(true);
+    };
+
+    const onMove = (e) => {
+      const dx = e.touches[0].clientX - touchStartX.current;
+      const dy = e.touches[0].clientY - touchStartY.current;
+
+      if (dirLocked.current === null) {
+        if (Math.abs(dy) > Math.abs(dx)) {
+          dirLocked.current = "vertical";
+        } else {
+          dirLocked.current = "horizontal";
+        }
+      }
+
+      if (dirLocked.current === "vertical") {
+        setSwipeX(0);
+        setSwiping(false);
+        return;
+      }
+
+      if (dx > 0) {
+        e.preventDefault();
+        const clamped = Math.min(dx, SWIPE_THRESHOLD + 20);
+        setSwipeX(clamped);
+
+        if (clamped >= SWIPE_THRESHOLD && !didTrigger.current) {
+          didTrigger.current = true;
+          if (navigator.vibrate) navigator.vibrate(30);
+        }
+      }
+    };
+
+    const onEnd = () => {
+      if (didTrigger.current && onReplyRef.current) {
+        onReplyRef.current({
+          id: message.id,
+          content: message.content,
+          senderName: message.senderName,
+        });
+      }
+      setSwipeX(0);
+      setSwiping(false);
+      dirLocked.current = null;
+      didTrigger.current = false;
+    };
+
+    const onCancel = () => {
+      setSwipeX(0);
+      setSwiping(false);
+      dirLocked.current = null;
+      didTrigger.current = false;
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onCancel, { passive: true });
+
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onCancel);
+    };
+  }, [message.id, message.content, message.senderName]);
 
   if (message.system) {
     return (
@@ -22,58 +105,12 @@ const MessageBubble = memo(function MessageBubble({ message, onReply }) {
 
   const isOwn = message.isOwn === true;
 
-  const onTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
-    swipeLocked.current = false;
-    didTrigger.current = false;
-    setSwiping(true);
-  };
-
-  const onTouchMove = (e) => {
-    const dx = e.touches[0].clientX - touchStartX.current;
-    const dy = e.touches[0].clientY - touchStartY.current;
-
-    if (!swipeLocked.current) {
-      if (Math.abs(dy) > Math.abs(dx)) {
-        setSwiping(false);
-        return;
-      }
-      swipeLocked.current = true;
-    }
-
-    if (dx > 0) {
-      const clamped = Math.min(dx, SWIPE_THRESHOLD + 20);
-      setSwipeX(clamped);
-      if (clamped >= SWIPE_THRESHOLD && !didTrigger.current) {
-        didTrigger.current = true;
-        if (navigator.vibrate) navigator.vibrate(30);
-      }
-    }
-  };
-
-  const onTouchEnd = () => {
-    if (didTrigger.current && onReply) {
-      onReply({
-        id: message.id,
-        content: message.content,
-        senderName: message.senderName,
-      });
-    }
-    setSwipeX(0);
-    setSwiping(false);
-    didTrigger.current = false;
-    swipeLocked.current = false;
-  };
-
   return (
     <div
+      ref={rowRef}
       className={`bubble-row ${
         isOwn ? "bubble-row--own" : "bubble-row--other"
       }`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       {!isOwn && (
         <span
@@ -101,7 +138,7 @@ const MessageBubble = memo(function MessageBubble({ message, onReply }) {
           }`}
           style={{ transform: `translateX(${swipeX}px)` }}
         >
-          {swipeX > 10 && (
+          {swipeX > 8 && (
             <div
               className="reply-hint"
               style={{ opacity: Math.min(swipeX / SWIPE_THRESHOLD, 1) }}
@@ -133,13 +170,15 @@ const MessageBubble = memo(function MessageBubble({ message, onReply }) {
                   {message.replyTo.senderName}
                 </span>
                 <span className="reply-preview__text">
-                  {message.replyTo.content.length > 80
+                  {message.replyTo.content?.length > 80
                     ? message.replyTo.content.slice(0, 80) + "…"
                     : message.replyTo.content}
                 </span>
               </div>
             )}
+
             <p className="bubble__text">{message.content}</p>
+
             <div className="bubble__footer">
               <span className="bubble__time">
                 {formatTime(message.timestamp)}
